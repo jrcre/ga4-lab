@@ -412,11 +412,6 @@ export default function GA4TeachingApp() {
           if (apiSecret.trim()) payload.api_secret = apiSecret.trim();
         }
 
-        const fetchOptions = {
-          method: "POST",
-          body: JSON.stringify(payload),
-        };
-
         let response;
         if (serverSide) {
           const blob = new Blob([JSON.stringify(payload)], { type: "text/plain" });
