@@ -393,6 +393,7 @@ export default function GA4TeachingApp() {
         const clientId = generateClientId();
         const payload = {
           client_id: clientId,
+          ...(debugMode && !serverSide ? { debug_mode: true } : {}),
           events: [
             {
               name: event.name,
@@ -415,17 +416,15 @@ export default function GA4TeachingApp() {
           method: "POST",
           body: JSON.stringify(payload),
         };
-        if (serverSide) {
-          fetchOptions.headers = { "Content-Type": "application/json" };
-        }
 
         let response;
         if (serverSide) {
-          response = await fetch(url, fetchOptions);
+          const blob = new Blob([JSON.stringify(payload)], { type: "text/plain" });
+          const sent = navigator.sendBeacon(url, blob);
+          response = { ok: sent !== false, status: sent !== false ? 204 : 0 };
         } else if (debugMode) {
           // El endpoint /debug/mp/collect no permite CORS desde el navegador.
           // Usamos sendBeacon con text/plain (no dispara preflight) y asumimos éxito.
-          // Para validar el payload, usamos el endpoint normal con no-cors.
           const blob = new Blob([JSON.stringify(payload)], { type: "text/plain" });
           const sent = navigator.sendBeacon(url, blob);
           response = { ok: sent !== false, status: sent !== false ? 204 : 0 };
@@ -437,14 +436,12 @@ export default function GA4TeachingApp() {
 
         const modeLabel = serverSide ? "→ SS" : debugMode ? "→ Debug" : "";
         if (debugMode && !serverSide) {
-          const debugData = await response.json();
-          const hasErrors = debugData.validationMessages && debugData.validationMessages.length > 0;
           addLog(
             event.name,
             event.icon,
-            { sent: payload, debug_response: debugData },
-            hasErrors ? "warning" : "success",
-            hasErrors ? "Validation issues" : "Debug OK"
+            { sent: payload, nota: "debug_mode:true enviado — revisa DebugView en GA4" },
+            "success",
+            "Debug OK (ver DebugView)"
           );
         } else {
           addLog(event.name, event.icon, payload, response.ok ? "success" : "error", response.ok ? `Sent ${modeLabel} (${response.status})` : `Error ${modeLabel} ${response.status}`);
