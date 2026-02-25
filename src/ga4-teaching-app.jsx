@@ -381,13 +381,12 @@ export default function GA4TeachingApp() {
       try {
         let url;
         if (serverSide) {
-          // Server-side: send to GTM SS container
-          const base = serverUrl.trim().replace(/\/+$/, "");
+          // Server-side: send via Vercel proxy to avoid CORS
           const ssParams = new URLSearchParams();
           if (measurementId.trim().startsWith("G-")) ssParams.set("measurement_id", measurementId.trim());
           if (apiSecret.trim()) ssParams.set("api_secret", apiSecret.trim());
           const ssQuery = ssParams.toString() ? `?${ssParams.toString()}` : "";
-          url = `${base}/mp/collect${ssQuery}`;
+          url = `/api/collect${ssQuery}`;
         } else if (debugMode) {
           url = `https://www.google-analytics.com/debug/mp/collect?measurement_id=${measurementId.trim()}&api_secret=${apiSecret.trim()}`;
         } else {
@@ -418,9 +417,12 @@ export default function GA4TeachingApp() {
 
         let response;
         if (serverSide) {
-          const blob = new Blob([JSON.stringify(payload)], { type: "text/plain" });
-          const sent = navigator.sendBeacon(url, blob);
-          response = { ok: sent !== false, status: sent !== false ? 204 : 0 };
+          // Same-origin proxy (/api/collect) — no CORS, can use fetch with JSON
+          response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
         } else if (debugMode) {
           // El endpoint /debug/mp/collect no permite CORS desde el navegador.
           // Usamos sendBeacon con text/plain (no dispara preflight) y asumimos éxito.
