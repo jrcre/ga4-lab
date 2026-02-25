@@ -233,32 +233,6 @@ function generateClientId() {
   return id;
 }
 
-async function sendToGA4(measurementId, apiSecret, eventName, eventParams) {
-  const clientId = generateClientId();
-  const payload = {
-    client_id: clientId,
-    events: [
-      {
-        name: eventName,
-        params: {
-          ...eventParams,
-          engagement_time_msec: "100",
-          session_id: Math.floor(Date.now() / 1000).toString(),
-        },
-      },
-    ],
-  };
-
-  const url = `https://www.google-analytics.com/mp/collect?measurement_id=${measurementId}&api_secret=${apiSecret}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-
-  return response;
-}
-
 function LogEntry({ entry, index }) {
   const [expanded, setExpanded] = useState(false);
   const statusColor = entry.status === "success" ? "#22c55e" : entry.status === "error" ? "#ef4444" : "#f59e0b";
