@@ -383,7 +383,11 @@ export default function GA4TeachingApp() {
         if (serverSide) {
           // Server-side: send to GTM SS container
           const base = serverUrl.trim().replace(/\/+$/, "");
-          url = `${base}/mp/collect`;
+          const ssParams = new URLSearchParams();
+          if (measurementId.trim().startsWith("G-")) ssParams.set("measurement_id", measurementId.trim());
+          if (apiSecret.trim()) ssParams.set("api_secret", apiSecret.trim());
+          const ssQuery = ssParams.toString() ? `?${ssParams.toString()}` : "";
+          url = `${base}/mp/collect${ssQuery}`;
         } else if (debugMode) {
           url = `https://www.google-analytics.com/debug/mp/collect?measurement_id=${measurementId.trim()}&api_secret=${apiSecret.trim()}`;
         } else {
