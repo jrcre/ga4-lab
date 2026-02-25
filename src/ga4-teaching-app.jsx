@@ -455,7 +455,7 @@ export default function GA4TeachingApp() {
         setSending(false);
       }
     },
-    [isConfigured, measurementId, apiSecret, debugMode, serverSide, serverUrl, addLog]
+    [isConfigured, measurementId, apiSecret, debugMode, serverSide, addLog]
   );
 
   const sendAllEcommerce = useCallback(async () => {
