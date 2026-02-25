@@ -381,12 +381,12 @@ export default function GA4TeachingApp() {
       try {
         let url;
         if (serverSide) {
-          // Server-side: send via Vercel proxy to avoid CORS
+          // Server-side: send directly to GTM SS container
+          const base = serverUrl.trim().replace(/\/+$/, "");
           const ssParams = new URLSearchParams();
           if (measurementId.trim().startsWith("G-")) ssParams.set("measurement_id", measurementId.trim());
-          if (apiSecret.trim()) ssParams.set("api_secret", apiSecret.trim());
           const ssQuery = ssParams.toString() ? `?${ssParams.toString()}` : "";
-          url = `/api/collect${ssQuery}`;
+          url = `${base}/mp/collect${ssQuery}`;
         } else if (debugMode) {
           url = `https://www.google-analytics.com/debug/mp/collect?measurement_id=${measurementId.trim()}&api_secret=${apiSecret.trim()}`;
         } else {
@@ -417,12 +417,10 @@ export default function GA4TeachingApp() {
 
         let response;
         if (serverSide) {
-          // Same-origin proxy (/api/collect) — no CORS, can use fetch with JSON
-          response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
+          // sendBeacon with text/plain avoids CORS preflight
+          const blob = new Blob([JSON.stringify(payload)], { type: "text/plain" });
+          const sent = navigator.sendBeacon(url, blob);
+          response = { ok: sent !== false, status: sent !== false ? 204 : 0 };
         } else if (debugMode) {
           // El endpoint /debug/mp/collect no permite CORS desde el navegador.
           // Usamos sendBeacon con text/plain (no dispara preflight) y asumimos éxito.
@@ -455,7 +453,7 @@ export default function GA4TeachingApp() {
         setSending(false);
       }
     },
-    [isConfigured, measurementId, apiSecret, debugMode, serverSide, addLog]
+    [isConfigured, measurementId, apiSecret, debugMode, serverSide, serverUrl, addLog]
   );
 
   const sendAllEcommerce = useCallback(async () => {
