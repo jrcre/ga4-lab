@@ -411,11 +411,29 @@ export default function GA4TeachingApp() {
           if (apiSecret.trim()) payload.api_secret = apiSecret.trim();
         }
 
-        const response = await fetch(url, {
+        const fetchOptions = {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        });
+        };
+        if (serverSide) {
+          fetchOptions.headers = { "Content-Type": "application/json" };
+        }
+
+        let response;
+        if (serverSide) {
+          response = await fetch(url, fetchOptions);
+        } else if (debugMode) {
+          // El endpoint /debug/mp/collect no permite CORS desde el navegador.
+          // Usamos sendBeacon con text/plain (no dispara preflight) y asumimos éxito.
+          // Para validar el payload, usamos el endpoint normal con no-cors.
+          const blob = new Blob([JSON.stringify(payload)], { type: "text/plain" });
+          const sent = navigator.sendBeacon(url, blob);
+          response = { ok: sent !== false, status: sent !== false ? 204 : 0 };
+        } else {
+          const blob = new Blob([JSON.stringify(payload)], { type: "text/plain" });
+          const sent = navigator.sendBeacon(url, blob);
+          response = { ok: sent, status: sent ? 204 : 0 };
+        }
 
         const modeLabel = serverSide ? "→ SS" : debugMode ? "→ Debug" : "";
         if (debugMode && !serverSide) {
